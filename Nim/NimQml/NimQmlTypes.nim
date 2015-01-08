@@ -11,6 +11,8 @@ type
   QVariant* = ref object of RootObj
     ## A QVariant
     data*: RawQVariant
+    variant*: QVariant ## keep alive an internal QVariant
+    qobject*: QObject ## keep alive an internal QObject
   QVariantNonGC* = ref object of QVariant
     ## Non-garbage collected QVariant
   QObjectObj* = object of RootObj ## A QObject

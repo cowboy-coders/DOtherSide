@@ -57,6 +57,10 @@ proc dos_qvariant_setBool(variant: RawQVariant, value: bool) {.cdecl, dynlib:"li
 proc dos_qvariant_setString(variant: RawQVariant, value: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
 proc dos_chararray_delete(rawCString: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
 
+proc nilKeepAliveRefs(variant: QVariant) =
+  variant.variant = nil
+  variant.qobject = nil
+
 proc create*(variant: var QVariant) =
   ## Create a new QVariant
   dos_qvariant_create(variant.data)
@@ -71,10 +75,12 @@ proc create*(variant: var QVariant, value: bool) =
 
 proc create*(variant: var QVariant, value: string) = 
   ## Create a new QVariant given a string value
+  variant.variant = variant
   dos_qvariant_create_string(variant.data, value)
 
 proc create*(variant: var QVariant, value: QObject) =
   ## Create a new QVariant given a QObject
+  variant.qobject = value
   dos_qvariant_create_qobject(variant.data, value.data)
 
 proc delete*(variant: QVariant) = 
@@ -94,6 +100,7 @@ proc intVal*(variant: QVariant): int =
 
 proc `intVal=`*(variant: QVariant, value: int) = 
   ## Sets the QVariant value int value
+  nilKeepAliveRefs(variant)
   var rawValue = value.cint
   dos_qvariant_setInt(variant.data, rawValue)
 
@@ -103,6 +110,7 @@ proc boolVal*(variant: QVariant): bool =
 
 proc `boolVal=`*(variant: QVariant, value: bool) =
   ## Sets the QVariant bool value
+  nilKeepAliveRefs(variant)
   dos_qvariant_setBool(variant.data, value)
 
 proc stringVal*(variant: QVariant): string = 
@@ -115,6 +123,7 @@ proc stringVal*(variant: QVariant): string =
 
 proc `stringVal=`*(variant: QVariant, value: string) = 
   ## Sets the QVariant string value
+  nilKeepAliveRefs(variant)
   dos_qvariant_setString(variant.data, value)
 
 proc finalizeQVariant(variant: QVariant) =
@@ -149,7 +158,6 @@ proc createQVariant*(raw: RawQVariant): QVariantNonGC =
   ## wrap a `RawQVariant`` without a finalizer
   new(result)
   result.data = raw
-
 
 # QQmlApplicationEngine
 proc dos_qqmlapplicationengine_create(engine: var QQmlApplicationEngine) {.cdecl, dynlib:"libDOtherSide.so", importc.}
@@ -241,7 +249,7 @@ method onSlotCalled*(nimobject: QObject, slotName: string, args: openarray[QVari
   discard
 
 proc qobjectCallback(nimobject: ptr QObjectObj, slotName: RawQVariant, numArguments: cint, arguments: QVariantArrayPtr) {.cdecl, exportc.} =
-  let qobject = cast[QObject](nimobject)
+  let qobject = cast[QObject](nimobject) #FIXME: is this safe?!
   assert qobject != nil, "expecting valid QObject"
   let variant = createQVariant(slotName)
   # forward to the QObject subtype instance
