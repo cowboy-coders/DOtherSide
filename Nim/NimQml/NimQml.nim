@@ -1,5 +1,7 @@
+
 import NimQmlTypes
 import tables
+import typetraits
 
 ## NimQml aims to provide binding to the QML for the Nim programming language
 
@@ -22,8 +24,6 @@ type QMetaType* {.pure.} = enum ## \
   QVariant = cint(41), 
   Void = cint(43)
 
-var qobjectRegistry = initTable[ptr QObjectObj, QObject]()
-
 proc debugMsg(message: string) = 
   echo "NimQml: ", message
 
@@ -42,97 +42,113 @@ proc debugMsg(typeName: string, procName: string, userMessage: string) =
   debugMsg(message)
 
 # QVariant
-proc dos_qvariant_create(variant: var QVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_create_int(variant: var QVariant, value: cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_create_bool(variant: var QVariant, value: bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_create_string(variant: var QVariant, value: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_create_qobject(variant: var QVariant, value: DynamicQObject) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_delete(variant: QVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_isnull(variant: QVariant, isNull: var bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_toInt(variant: QVariant, value: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_toBool(variant: QVariant, value: var bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_toString(variant: QVariant, value: var cstring, length: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_setInt(variant: QVariant, value: cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_setBool(variant: QVariant, value: bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qvariant_setString(variant: QVariant, value: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_create(variant: var RawQVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_create_int(variant: var RawQVariant, value: cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_create_bool(variant: var RawQVariant, value: bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_create_string(variant: var RawQVariant, value: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_create_qobject(variant: var RawQVariant, value: RawQObject) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_delete(variant: RawQVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_isnull(variant: RawQVariant, isNull: var bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_toInt(variant: RawQVariant, value: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_toBool(variant: RawQVariant, value: var bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_toString(variant: RawQVariant, value: var cstring, length: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_setInt(variant: RawQVariant, value: cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_setBool(variant: RawQVariant, value: bool) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qvariant_setString(variant: RawQVariant, value: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
 proc dos_chararray_delete(rawCString: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-
 
 proc create*(variant: var QVariant) =
   ## Create a new QVariant
-  dos_qvariant_create(variant)
+  dos_qvariant_create(variant.data)
 
 proc create*(variant: var QVariant, value: cint) = 
   ## Create a new QVariant given a cint value
-  dos_qvariant_create_int(variant, value)
+  dos_qvariant_create_int(variant.data, value)
 
 proc create*(variant: var QVariant, value: bool) =
   ## Create a new QVariant given a bool value  
-  dos_qvariant_create_bool(variant, value)
+  dos_qvariant_create_bool(variant.data, value)
 
 proc create*(variant: var QVariant, value: string) = 
   ## Create a new QVariant given a string value
-  dos_qvariant_create_string(variant, value)
+  dos_qvariant_create_string(variant.data, value)
 
 proc create*(variant: var QVariant, value: QObject) =
   ## Create a new QVariant given a QObject
-  dos_qvariant_create_qobject(variant, value.data)
+  dos_qvariant_create_qobject(variant.data, value.data)
 
 proc delete*(variant: QVariant) = 
   ## Delete a QVariant
   debugMsg("QVariant", "delete")
-  dos_qvariant_delete(variant)
+  dos_qvariant_delete(variant.data)
 
 proc isNull*(variant: QVariant): bool = 
   ## Return true if the QVariant value is null, false otherwise
-  dos_qvariant_isnull(variant, result)
+  dos_qvariant_isnull(variant.data, result)
 
 proc intVal*(variant: QVariant): int = 
   ## Return the QVariant value as int
   var rawValue: cint
-  dos_qvariant_toInt(variant, rawValue)
+  dos_qvariant_toInt(variant.data, rawValue)
   result = rawValue.cint
 
 proc `intVal=`*(variant: QVariant, value: int) = 
   ## Sets the QVariant value int value
   var rawValue = value.cint
-  dos_qvariant_setInt(variant, rawValue)
+  dos_qvariant_setInt(variant.data, rawValue)
 
 proc boolVal*(variant: QVariant): bool = 
   ## Return the QVariant value as bool
-  dos_qvariant_toBool(variant, result)
+  dos_qvariant_toBool(variant.data, result)
 
 proc `boolVal=`*(variant: QVariant, value: bool) =
   ## Sets the QVariant bool value
-  dos_qvariant_setBool(variant, value)
+  dos_qvariant_setBool(variant.data, value)
 
 proc stringVal*(variant: QVariant): string = 
   ## Return the QVariant value as string
   var rawCString: cstring
   var rawCStringLength: cint
-  dos_qvariant_toString(variant, rawCString, rawCStringLength)
+  dos_qvariant_toString(variant.data, rawCString, rawCStringLength)
   result = $rawCString
   dos_chararray_delete(rawCString)
 
 proc `stringVal=`*(variant: QVariant, value: string) = 
   ## Sets the QVariant string value
-  dos_qvariant_setString(variant, value)
+  dos_qvariant_setString(variant.data, value)
+
+proc finalizeQVariant(variant: QVariant) =
+  delete(variant)
 
 proc newQVariant*(stringVal: string): QVariant =
   ## Create a new QVariant given a string value
+  new(result, finalizeQVariant)
   result.create(stringVal)
 
 proc newQVariant*(boolVal: bool): QVariant =
   ## Create a new QVariant given a bool value
+  new(result, finalizeQVariant)
   result.create(boolVal)
 
 proc newQVariant*(intVal: int): QVariant =
   ## Create a new QVariant given a cint value
+  new(result, finalizeQVariant)
   result.create(intval.cint)
 
 proc newQVariant*(qobject: QObject): QVariant =
   ## Create a new QVariant given a QObject
+  new(result, finalizeQVariant)
   result.create(qobject)
+
+proc newQVariant(raw: RawQVariant): QVariant =
+  ## wrap a ``RawQVariant`` with a finalizer
+  new(result, finalizeQVariant)
+  result.data = raw
+
+proc createQVariant*(raw: RawQVariant): QVariantNonGC =
+  ## wrap a `RawQVariant`` without a finalizer
+  new(result)
+  result.data = raw
 
 
 # QQmlApplicationEngine
@@ -158,16 +174,16 @@ proc delete*(engine: QQmlApplicationEngine) =
   debugMsg("QQmlApplicationEngine", "delete")
   dos_qqmlapplicationengine_delete(engine)
 
-proc newQQmlApplicationEngine*(): QQmlApplicationEngine =
+proc createQQmlApplicationEngine*(): QQmlApplicationEngine =
   ## Create an new QQmlApplicationEngine
   result.create
 
 # QQmlContext
-proc dos_qqmlcontext_setcontextproperty(context: QQmlContext, propertyName: cstring, propertyValue: QVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qqmlcontext_setcontextproperty(context: QQmlContext, propertyName: cstring, propertyValue: RawQVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
 
 proc setContextProperty*(context: QQmlContext, propertyName: string, propertyValue: QVariant) = 
   ## Sets a new property with the given value
-  dos_qqmlcontext_setcontextproperty(context, propertyName, propertyValue)
+  dos_qqmlcontext_setcontextproperty(context, propertyName, propertyValue.data)
 
 # QApplication
 proc dos_qguiapplication_create() {.cdecl, dynlib: "libDOtherSide.so", importc.}
@@ -186,49 +202,54 @@ proc delete*(application: QApplication) =
   ## Delete the given QApplication
   dos_qguiapplication_delete()
 
-proc newQApplication*(): QApplication =
+proc createQApplication*(): QApplication =
   ## Create a new QApplication
   result.create
 
 # QObject
-type QVariantArray {.unchecked.} = array[0..0, QVariant]
+type QVariantArray {.unchecked.} = array[0..0, RawQVariant]
 type QVariantArrayPtr = ptr QVariantArray
 
 proc toVariantSeq(args: QVariantArrayPtr, numArgs: cint): seq[QVariant] =
   result = @[]
   for i in 0..numArgs-1:
-    result.add(args[i])
+    let variant = createQVariant(args[i])
+    result.add(variant)
 
 proc toCIntSeq(metaTypes: openarray[QMetaType]): seq[cint] =
   result = @[]
   for metaType in metaTypes:
     result.add(cint(metaType))
 
-type QObjectCallBack = proc(nimobject: ptr QObjectObj, slotName: QVariant, numArguments: cint, arguments: QVariantArrayPtr) {.cdecl.}
+proc toRawSeq(wrapped: openarray[QVariant]): seq[RawQVariant] =
+  result = @[]
+  for variant in wrapped:
+    result.add variant.data
+
+type QObjectCallBack = proc(nimobject: ptr QObjectObj, slotName: RawQVariant, numArguments: cint, arguments: QVariantArrayPtr) {.cdecl.}
     
-proc dos_qobject_create(qobject: var DynamicQObject, nimobject: ptr QObjectObj, qobjectCallback: QObjectCallBack) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qobject_delete(qobject: DynamicQObject) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qobject_slot_create(qobject: DynamicQObject, slotName: cstring, argumentsCount: cint, argumentsMetaTypes: ptr cint, slotIndex: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qobject_signal_create(qobject: DynamicQObject, signalName: cstring, argumentsCount: cint, argumentsMetaTypes: ptr cint, signalIndex: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qobject_signal_emit(qobject: DynamicQObject, signalName: cstring, argumentsCount: cint, arguments: ptr QVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
-proc dos_qobject_property_create(qobject: DynamicQObject, propertyName: cstring, propertyType: cint, readSlot: cstring, writeSlot: cstring, notifySignal: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qobject_create(qobject: var RawQObject, nimobject: ptr QObjectObj, qobjectCallback: QObjectCallBack) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qobject_delete(qobject: RawQObject) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qobject_slot_create(qobject: RawQObject, slotName: cstring, argumentsCount: cint, argumentsMetaTypes: ptr cint, slotIndex: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qobject_signal_create(qobject: RawQObject, signalName: cstring, argumentsCount: cint, argumentsMetaTypes: ptr cint, signalIndex: var cint) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qobject_signal_emit(qobject: RawQObject, signalName: cstring, argumentsCount: cint, arguments: ptr RawQVariant) {.cdecl, dynlib:"libDOtherSide.so", importc.}
+proc dos_qobject_property_create(qobject: RawQObject, propertyName: cstring, propertyType: cint, readSlot: cstring, writeSlot: cstring, notifySignal: cstring) {.cdecl, dynlib:"libDOtherSide.so", importc.}
 
 method onSlotCalled*(nimobject: QObject, slotName: string, args: openarray[QVariant]) =
   ## Called from the NimQml bridge when a slot is called from Qml.
   ## Subclasses can override the given method for handling the slot call
   discard
 
-proc qobjectCallback(nimobject: ptr QObjectObj, slotName: QVariant, numArguments: cint, arguments: QVariantArrayPtr) {.cdecl, exportc.} =
-  let qobject = qobjectRegistry[nimobject]
+proc qobjectCallback(nimobject: ptr QObjectObj, slotName: RawQVariant, numArguments: cint, arguments: QVariantArrayPtr) {.cdecl, exportc.} =
+  let qobject = cast[QObject](nimobject)
   assert qobject != nil, "expecting valid QObject"
+  let variant = createQVariant(slotName)
   # forward to the QObject subtype instance
-  qobject.onSlotCalled(slotName.stringVal, arguments.toVariantSeq(numArguments))
+  qobject.onSlotCalled(variant.stringVal, arguments.toVariantSeq(numArguments))
 
 proc create*(qobject: QObject) =
   ## Create a new QObject
-  let internalRef = qobject
   let qobjectPtr = addr(qobject[])
-  qobjectRegistry[qobjectPtr] = internalRef
   qobject.name = "QObject"
   qobject.slots = initTable[string,cint]()
   qobject.signals = initTable[string, cint]()
@@ -236,9 +257,16 @@ proc create*(qobject: QObject) =
 
 proc delete*(qobject: QObject) = 
   ## Delete the given QObject
-  let qobjectPtr = addr(qobject[])
-  qobjectRegistry.del qobjectPtr
+  debugMsg("QObject", "delete " & qobject.name)
   dos_qobject_delete(qobject.data)
+
+proc finalizeQObject[T:QObject](qobject: T) =
+  delete(qobject)
+
+proc newQObject*[T:QObject](qobject: var T) =
+  new(qobject,finalizeQObject[T])
+  create(qobject)
+  qobject.name = T.name
 
 proc registerSlot*(qobject: QObject,
                    slotName: string, 
@@ -274,8 +302,8 @@ proc registerProperty*(qobject: QObject,
 proc emit*(qobject: QObject, signalName: string, args: openarray[QVariant] = []) =
   ## Emit the signal with the given name and values
   if args.len > 0: 
-    var copy = @args
-    dos_qobject_signal_emit(qobject.data, signalName, args.len.cint, addr(copy[0]))
+    var argsAsRaw = toRawSeq(args)
+    dos_qobject_signal_emit(qobject.data, signalName, args.len.cint, addr(argsAsRaw[0]))
   else:
     dos_qobject_signal_emit(qobject.data, signalName, 0, nil)
 
