@@ -3,10 +3,10 @@ import macros
 import typeinfo
 
 proc mainProc() =
-  let app = newQApplication()
+  let app = createQApplication()
   defer: app.delete()
    
-  let engine = newQQmlApplicationEngine()
+  let engine = createQQmlApplicationEngine()
   defer: engine.delete()
 
   engine.load("main.qml")

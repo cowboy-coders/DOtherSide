@@ -4,8 +4,7 @@ type Contact = ref object of QObject
   m_name: string
   
 proc newContact*(): Contact =
-  result = Contact(m_name: "initialName")
-  result.create()
+  newQObject(result)
   result.m_name = "InitialName"
   result.registerSlot("getName", [QMetaType.QString])
   result.registerSlot("setName", [QMetaType.Void, QMetaType.QString])
