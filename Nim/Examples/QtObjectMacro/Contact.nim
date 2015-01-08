@@ -5,8 +5,8 @@ QtObject:
     m_name: string
 
   proc newContact*(): Contact =
-    result = Contact(m_name: "initialName")
-    result.create
+    newQObject(result)
+    result.m_name = "initialName"
   
   method getName*(contact: Contact): string {.slot.} =
     result = contact.m_name

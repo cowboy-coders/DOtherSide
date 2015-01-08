@@ -2,17 +2,15 @@ import NimQml
 import Contact
 
 proc mainProc() =
-  let app = newQApplication()
+  let app = createQApplication()
   defer: app.delete()
    
   let contact = newContact()
-  defer: contact.delete() 
 
-  let engine = newQQmlApplicationEngine()
+  let engine = createQQmlApplicationEngine()
   defer: engine.delete()
 
   let variant = newQVariant(contact)
-  defer: variant.delete()
 
   let rootContext: QQmlContext = engine.rootContext()
   rootContext.setContextProperty("contact", variant)
